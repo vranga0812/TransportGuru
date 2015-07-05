@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+	- this is the spring xml for defining beans that should be in 
+	  root application context of spring from which REST Context and WEB Context will inherit.
+ -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+
+
+	<!-- <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager" 
+				p:sessionFactory-ref="sessionFactory"/> -->
+		
+	<!-- 
+		 - this will load the hibernate properties from the location attribute 
+	-->
+	<util:properties id="hibernateProperties" location="classpath:/config/properties/hibernate.properties"/>
+	<!-- 
+		 - following is the bean definition for hibernate session factory 
+		 - uses the dataSource bean created using JNDI 
+		 - using C3P0 for connection pooling.
+	-->
+	<bean name="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean" 
+				scope="singleton"
+				p:packagesToScan="com.vbs.persistance.entities"
+				p:dataSource-ref="dataSource"
+				p:hibernateProperties-ref="hibernateProperties"/>
+	
+	<!-- 
+		- following is the bean definition for hibernate session factory
+		- this JNDI name should be configured in web.xml using resource-ref and also in the web server
+		- in case of tomcat this is configured in server.xml and in /META-INF/context.xml 
+	-->
+	<bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean" 
+				scope="singleton" 
+				p:jndiName="java:comp/env/jdbc/VBSDB"/>
+				
+</beans>
