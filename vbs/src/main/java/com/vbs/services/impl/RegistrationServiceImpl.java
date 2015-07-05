@@ -216,7 +216,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 				//increasing OTP attempts count, irrespective of valid otp, expired otp
 				profileActivationOTP.setVerificationAttempts(profileActivationOTP.getVerificationAttempts()+1);
 				if(profileActivationOTP.getCode()==OTP){
-					if(profileActivationOTP.getExpiryDateTime().before(new Date())){
+					if(profileActivationOTP.getExpiryDateTime().after(new Date())){
 						//setting user status to active
 						user.setStatus(USER_PROFILE_STATUS_ACTIVE);
 						isValidOtp = true;
