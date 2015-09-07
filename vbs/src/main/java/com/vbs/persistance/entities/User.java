@@ -62,12 +62,6 @@ public class User {
 	@Column(name="SECONDARY_MOBILE")
 	private String secondayMobile;
 	
-	@Column(name="USER_NAME", unique=true, nullable=false)
-	private String userName;
-	
-	@Column(name="PASSWORD", nullable=false)
-	private String password;
-	
 	@Column(name="USER_TYPE", nullable=false)
 	private String userType;
 	
@@ -220,30 +214,7 @@ public class User {
 	public void setSecondayMobile(String secondayMobile) {
 		this.secondayMobile = secondayMobile;
 	}
-	/**
-	 * @return the userName
-	 */
-	public String getUserName() {
-		return userName;
-	}
-	/**
-	 * @param userName the userName to set
-	 */
-	public void setUserName(String userName) {
-		this.userName = userName;
-	}
-	/**
-	 * @return the password
-	 */
-	public String getPassword() {
-		return password;
-	}
-	/**
-	 * @param password the password to set
-	 */
-	public void setPassword(String password) {
-		this.password = password;
-	}
+	
 	/**
 	 * @return the userType
 	 */
@@ -358,19 +329,18 @@ public class User {
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
+/*	@Override
 	public String toString() {
 		return "User [userId=" + userId + ", firstName=" + firstName
 				+ ", lastName=" + lastName + ", compnayName=" + compnayName
 				+ ", address=" + address.size() + ", otp=" + otp.size() + ", nativeLanguage="
 				+ nativeLanguage + ", email=" + email + ", primaryMobile="
 				+ primaryMobile + ", secondayMobile=" + secondayMobile
-				+ ", userName=" + userName + ", password=" + password
 				+ ", userType=" + userType + ", remarks=" + remarks
 				+ ", status=" + status + ", mobileVerifiedFlag="
 				+ mobileVerifiedFlag + ", idVerifiedFlag=" + idVerifiedFlag
 				+ ", createdBy=" + createdBy + ", createDate=" + createDate
 				+ ", updatedBy=" + updatedBy + ", updatedDate=" + updatedDate
 				+ "]";
-	}
+	}*/
 }

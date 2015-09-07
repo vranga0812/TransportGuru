@@ -21,7 +21,13 @@ import com.vbs.persistance.entities.Address;
  * this class uses some of JPA and hibernate annotations
  */
 
-public class UserForm {
+public class CreateUserRq extends BaseRq {
+
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3510422558888517740L;
 
 	@NotNull
 	@Size(min=2, max=50, message="{firstname.cannot.be.null}")
@@ -205,7 +211,7 @@ public class UserForm {
 	 */
 	@Override
 	public String toString() {
-		return "UserForm [firstName=" + firstName + ", lastName=" + lastName
+		return "CreateUserRq [firstName=" + firstName + ", lastName=" + lastName
 				+ ", compnayName=" + compnayName + ", address=" + address
 				+ ", nativeLanguage=" + nativeLanguage + ", email=" + email
 				+ ", primaryMobile=" + primaryMobile + ", secondayMobile="

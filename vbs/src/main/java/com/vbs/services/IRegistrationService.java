@@ -3,6 +3,7 @@ package com.vbs.services;
 import com.vbs.custom.exceptions.AlreadyTakenException;
 import com.vbs.custom.exceptions.VbsException;
 import com.vbs.persistance.entities.User;
+import com.vbs.persistance.entities.UserCredentials;
 
 /**
  * @author DL
@@ -11,9 +12,9 @@ import com.vbs.persistance.entities.User;
  * This interface will have set of methods that will be used to register and activate a user
  * 
  */
-public interface RegistrationService {
+public interface IRegistrationService {
 
-	public boolean createNewUser(User user) throws AlreadyTakenException;
+	public boolean createNewUser(final UserCredentials cred) throws AlreadyTakenException;
 	
 	public boolean activateUser(String username, long otp) throws VbsException;
 	

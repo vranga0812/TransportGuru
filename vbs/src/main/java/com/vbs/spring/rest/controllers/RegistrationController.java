@@ -1,12 +1,14 @@
 package com.vbs.spring.rest.controllers;
 
-import static com.vbs.utils.conversions.RequestToDBObjectConversion.convertUserFormToDBUserObject;
+import static com.vbs.utils.conversions.RequestToDBObjectConversion.convertUserFormToDBUserCredentialsObject;
 import static com.vbs.utils.Constants.PROFILE_ACTIVATION;
 
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +34,9 @@ import com.vbs.custom.exceptions.UserNameAlreadyTakenException;
 import com.vbs.custom.exceptions.VbsException;
 import com.vbs.persistance.entities.Address;
 import com.vbs.persistance.entities.User;
-import com.vbs.services.RegistrationService;
-import com.vbs.ui.pojos.UserForm;
+import com.vbs.persistance.entities.UserCredentials;
+import com.vbs.services.IRegistrationService;
+import com.vbs.ui.pojos.CreateUserRq;
 
 /**
  * @author DL
@@ -44,29 +47,29 @@ import com.vbs.ui.pojos.UserForm;
 public class RegistrationController {
 	
 	@Autowired
-	RegistrationService registrationService;
+	IRegistrationService registrationService;
 	
 	
 
 	/**
 	 * @return the registrationService
 	 */
-	public RegistrationService getRegistrationService() {
+	public IRegistrationService getRegistrationService() {
 		return registrationService;
 	}
 
 	/**
-	 * @param registrationService the registrationService to set
+	 * @param iRegistrationService the registrationService to set
 	 */
-	public void setRegistrationService(RegistrationService registrationService) {
-		this.registrationService = registrationService;
+	public void setRegistrationService(IRegistrationService iRegistrationService) {
+		this.registrationService = iRegistrationService;
 	}
 
 	
 	@RequestMapping(value="create", method=RequestMethod.POST)
-	public ResponseEntity<User> create(@Valid @RequestBody UserForm userForm, BindingResult errors) throws AlreadyTakenException, InvalidDataException{
+	public ResponseEntity<User> createNewUser(@Valid @RequestBody CreateUserRq createUserRq, BindingResult errors, HttpServletRequest rq) throws AlreadyTakenException, InvalidDataException{
 		
-		System.out.println("RegistrationController.create(): "+userForm);
+		System.out.println("RegistrationController.create(): "+createUserRq);
 		
 		if(errors.hasErrors()){
 				InvalidDataException dataException = new InvalidDataException();
@@ -74,15 +77,18 @@ public class RegistrationController {
 				throw dataException;
 		}
 		
-		User user = convertUserFormToDBUserObject(userForm);
+		UserCredentials cred = convertUserFormToDBUserCredentialsObject(createUserRq);
 		
-		registrationService.createNewUser(user);
-		
-		return new ResponseEntity<>(user,  HttpStatus.CREATED);
+		registrationService.createNewUser(cred);
+		HttpSession session = rq.getSession();
+		String newSessionId = session.getId();
+		rq.getSession().setAttribute("user", cred.getUser());
+		System.out.println("RegistrationController, new session id is-->"+newSessionId);
+		return new ResponseEntity<>(cred.getUser(),  HttpStatus.CREATED);
 		
 	}
 	
-	@RequestMapping(value="/activate/user/{username}/otp/{otp}")
+	@RequestMapping(value="/secure/activate/user/{username}/otp/{otp}")
 	@ResponseStatus(value=HttpStatus.NO_CONTENT)
 	public void activateUser(@PathVariable String username, @PathVariable long otp) throws VbsException{
 		System.out.println("activate User");
@@ -91,7 +97,7 @@ public class RegistrationController {
 		
 	}
 	
-	@RequestMapping(value="/generateOTP/user/{username}")
+	@RequestMapping(value="/secure/generateOTP/user/{username}")
 	@ResponseStatus(value=HttpStatus.NO_CONTENT)
 	public void requestNewOTP(@PathVariable String username) throws VbsException{
 		System.out.println("requestNewOTP");
@@ -129,20 +135,40 @@ public class RegistrationController {
     }
 
 	
-	@ExceptionHandler(VbsException.class)
-    @ResponseStatus(HttpStatus.EXPECTATION_FAILED)
-	@ResponseBody
-	public Errors<Error> handleVbsException(VbsException e){
-		Errors<Error> errors = new Errors<Error>();
-		errors.addError(new Error(e.getCode(), e.getMessage()));
-		return errors;
-	}
 	
 	
-	@ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-	public void handleException(Exception e){
-		e.printStackTrace();
+	@RequestMapping(value="create", method=RequestMethod.GET)
+	public ResponseEntity<CreateUserRq> dummyRequestObject(){
+		
+		Set<Address> addresses = new HashSet<>();
+		
+		Address address = new Address();
+		address.setAddress1("Give the street name with house number");
+		address.setAddress2("Optional address lane 2");
+		address.setCity("Set the city here ");
+		address.setDistrict("SetDistrict here");
+		address.setState("Set Stata here");
+		address.setCountry("Set the Country Here");
+		address.setPincode("Set he ZipCode here");
+		addresses.add(address);
+		
+		CreateUserRq dummyRq = new CreateUserRq();
+		
+		dummyRq.setFirstName("Venkata");
+		dummyRq.setLastName("Ranga");
+		dummyRq.setCompnayName("NONE");
+		dummyRq.setNativeLanguage("Telugu");
+		dummyRq.setEmail("dinesh.csit@gmail.com");
+		dummyRq.setPrimaryMobile("1234567890");
+		dummyRq.setSecondayMobile("44324332");
+		dummyRq.setUserType("Normal");
+		dummyRq.setRemarks("You Can set he remarks here");
+		dummyRq.setAddress(addresses);
+		dummyRq.setPassword("Sample");
+		dummyRq.setUserName("Sample");
+		
+		return new ResponseEntity<>(dummyRq, HttpStatus.OK);
+		
 	}
 	
 	public void createDummyUserObject(){
@@ -186,8 +212,6 @@ public class RegistrationController {
 		user.setEmail("dinesh.csit@gmail.com");
 		user.setPrimaryMobile("1234567890");
 		user.setSecondayMobile("44324332");
-		user.setUserName("dinesh");
-		user.setPassword("dinesh");
 		user.setUserType("Normal");
 		user.setAddress(addresses);
 	}

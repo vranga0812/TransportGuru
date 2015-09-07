@@ -6,6 +6,7 @@ import com.vbs.custom.exceptions.VbsException;
 import com.vbs.persistance.entities.Address;
 import com.vbs.persistance.entities.OTP;
 import com.vbs.persistance.entities.User;
+import com.vbs.persistance.entities.UserCredentials;
 
 /**
  * @author DL
@@ -15,7 +16,7 @@ import com.vbs.persistance.entities.User;
 public interface DatabaseDao {
 
 	// saves all the three objects to the VBS database
-	public abstract boolean createUser(User user, Set<Address> addresses, OTP otp);
+	public abstract boolean createUser(UserCredentials cred, OTP otp);
 	
 	//Implementation should save the profile to user info Database
 	public abstract void saveOrUpdate(Object obj);
@@ -24,7 +25,7 @@ public interface DatabaseDao {
 	public abstract boolean isUserNameAvailable(String username);
 	
 	//retrieve the customer profile using username
-	public abstract User getCustomerProfile(String username);
+	public abstract UserCredentials getCustomerProfile(String username);
 	
 	//retrieve the customer profile using email. implementation should throw error if is email parameter is false
 	public abstract User getCustomerProfile(String email, boolean isEmail) throws VbsException;

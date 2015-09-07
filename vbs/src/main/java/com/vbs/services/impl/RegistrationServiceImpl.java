@@ -5,7 +5,6 @@ import static com.vbs.utils.Constants.INITIAL_OTP_GENERATION_ATTEMPTS;
 import static com.vbs.utils.Constants.INITIAL_OTP_VERIFICATION_ATTEMPTS;
 import static com.vbs.utils.Constants.MAX_OTP_GENERATION_ATTEMPTS;
 import static com.vbs.utils.Constants.MAX_OTP_VERIFICATION_ATTEMPTS;
-import static com.vbs.utils.Constants.N;
 import static com.vbs.utils.Constants.OTP_EXPIRATION_IN_SEC;
 import static com.vbs.utils.Constants.OTP_LENGHT;
 import static com.vbs.utils.Constants.PROFILE_ACTIVATION;
@@ -16,7 +15,6 @@ import static com.vbs.utils.Constants.VBS_SYSTEM;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -26,11 +24,11 @@ import com.vbs.custom.exceptions.AlreadyTakenException;
 import com.vbs.custom.exceptions.UserNameAlreadyTakenException;
 import com.vbs.custom.exceptions.VbsException;
 import com.vbs.persistance.dao.DatabaseDao;
-import com.vbs.persistance.entities.Address;
 import com.vbs.persistance.entities.OTP;
 import com.vbs.persistance.entities.User;
+import com.vbs.persistance.entities.UserCredentials;
 import com.vbs.security.opt.OTPGenerator;
-import com.vbs.services.RegistrationService;
+import com.vbs.services.IRegistrationService;
 
 /**
  * @author DL
@@ -39,7 +37,7 @@ import com.vbs.services.RegistrationService;
 
 @Service
 @Primary
-public class RegistrationServiceImpl implements RegistrationService {
+public class RegistrationServiceImpl implements IRegistrationService {
 
 	@Autowired
 	DatabaseDao dbOps;
@@ -79,37 +77,23 @@ public class RegistrationServiceImpl implements RegistrationService {
 	
 
 	/* (non-Javadoc)
-	 * @see com.vbs.services.RegistrationService#createNewUser(com.vbs.persistance.entities.User)
+	 * @see com.vbs.services.IRegistrationService#createNewUser(com.vbs.persistance.entities.User)
 	 */
 	@Override
-	public boolean createNewUser(User user) throws AlreadyTakenException {
+	public boolean createNewUser(final UserCredentials cred) throws AlreadyTakenException {
 		
 		System.out.println("RegistrationServiceImpl.createNewUser()");
 		
 		System.out.println("Checking if the username is available...");
 		
-		if(!dbOps.isUserNameAvailable(user.getUserName()))
+		if(!dbOps.isUserNameAvailable(cred.getUsername()))
 			throw new UserNameAlreadyTakenException("Username is not available");
 		
 		boolean result = false;
 		
-		user.setMobileVerifiedFlag(N);
-		user.setIdVerifiedFlag(N);
-		user.setCreatedBy(VBS_SYSTEM+COLON+user.getUserName());
-		user.setUpdatedBy(VBS_SYSTEM+COLON+user.getUserName());
-		user.setStatus(USER_PROFILE_STATUS_PENDING_ACTIVATION);
+		OTP otp = getOTPInstance(cred.getUsername(), PROFILE_ACTIVATION);
 		
-		Set<Address> addresses = user.getAddress();
-		for(Address address : addresses){
-			address.setCreatedBy(VBS_SYSTEM+COLON+user.getUserName());
-			address.setUpdatedBy(VBS_SYSTEM+COLON+user.getUserName());
-		}
-		
-		user.setAddress(null);
-		
-		OTP otp = getOTPInstance(user, PROFILE_ACTIVATION);
-		
-		dbOps.createUser(user, addresses, otp);
+		dbOps.createUser(cred, otp);
 		//TODO: Write code to send OTP to customer via SMS
 		return result;
 		
@@ -121,7 +105,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.vbs.services.RegistrationService#generateOtp(java.lang.String)
+	 * @see com.vbs.services.IRegistrationService#generateOtp(java.lang.String)
 	 */
 	@Override
 	public boolean generateOtp(String username, String purpose) throws VbsException {
@@ -131,13 +115,14 @@ public class RegistrationServiceImpl implements RegistrationService {
 			throw new VbsException("purpose field is mandatory to verify OTP");
 		
 		//getting the user profile object based on username
-		User user = dbOps.getCustomerProfile(username);
+		UserCredentials cred = dbOps.getCustomerProfile(username);
 		
 		//if the user profile is null based on username, exception is thrown
-		if(user == null){
+		if(cred == null){
 			throw new VbsException("USER_NOT_FOUND","INVALID USER NAME");
 		}
 		
+		User user = cred.getUser();
 		
 		//Getting OTP that is generated for OTP. During regeneration, NO NEW record should be created. 
 		OTP profileActivationOTP = null;
@@ -150,7 +135,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 		
 		//check if there is already record in DB for the given purpose. if exists update existing if not create new
 		if(profileActivationOTP == null){
-			profileActivationOTP = getOTPInstance(user, purpose);
+			profileActivationOTP = getOTPInstance(username, purpose);
 			isOtpGenerated = true;
 		}else{
 			if(profileActivationOTP.getGenerationAttempts()>=MAX_OTP_GENERATION_ATTEMPTS){
@@ -169,7 +154,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.vbs.services.RegistrationService#verifyOtp(com.vbs.persistance.entities.User, java.lang.String, java.lang.String)
+	 * @see com.vbs.services.IRegistrationService#verifyOtp(com.vbs.persistance.entities.User, java.lang.String, java.lang.String)
 	 */
 	@Override
 	public boolean verifyOtp(User user, String OTP, String purpose) {
@@ -177,7 +162,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.vbs.services.RegistrationService#verifyOtp(java.lang.String, java.lang.String, java.lang.String)
+	 * @see com.vbs.services.IRegistrationService#verifyOtp(java.lang.String, java.lang.String, java.lang.String)
 	 */
 	@Override
 	public boolean verifyOtp(String username, long OTP, String purpose) throws VbsException {
@@ -186,13 +171,13 @@ public class RegistrationServiceImpl implements RegistrationService {
 			throw new VbsException("purpose field is mandatory to verify OTP");
 		
 		//getting the user profile object based on username
-		User user = dbOps.getCustomerProfile(username);
+		UserCredentials cred = dbOps.getCustomerProfile(username);
 		
 		//if the user profile is null based on username, exception is thrown
-		if(user == null){
+		if(cred == null){
 			throw new VbsException("USER_NOT_FOUND","INVALID USER NAME");
 		}
-		
+		User user = cred.getUser();
 		//Getting OTP that is generated for OTP. During regeneration, NO NEW record should be created. 
 		OTP profileActivationOTP = null;
 		for(OTP otp : user.getOtp()){
@@ -255,14 +240,14 @@ public class RegistrationServiceImpl implements RegistrationService {
 	
 	
 	/* (non-Javadoc)
-	 * @see com.vbs.services.RegistrationService#activateUser(long, long)
+	 * @see com.vbs.services.IRegistrationService#activateUser(long, long)
 	 */
 	@Override
 	public boolean activateUser(String username, long otpCode) throws VbsException {
 		return verifyOtp(username, otpCode, PROFILE_ACTIVATION);	
 	}
 
-	private OTP getOTPInstance(User user, String purpose){
+	private OTP getOTPInstance(String username,String purpose){
 		long otpCode = otpGenerator.generateOTP(OTP_LENGHT);
 		OTP otp = new OTP();
 		//otp.setUser(user);
@@ -271,9 +256,10 @@ public class RegistrationServiceImpl implements RegistrationService {
 		otp.setGenerationAttempts(INITIAL_OTP_GENERATION_ATTEMPTS);
 		otp.setExpiryDateTime(Date.from(Instant.now().plusSeconds(OTP_EXPIRATION_IN_SEC)));
 		otp.setPurpose(purpose);
-		otp.setCreatedBy(VBS_SYSTEM+COLON+user.getUserName());
-		otp.setUpdatedBy(VBS_SYSTEM+COLON+user.getUserName());
-		otp.setUser_id(user.getUserId());
+		otp.setCreatedBy(VBS_SYSTEM+COLON+username);
+		otp.setUpdatedBy(VBS_SYSTEM+COLON+username);
+		//may not be able to obtain user id at this point
+		//otp.setUser_id(userId);
 		
 		return otp;
 	}

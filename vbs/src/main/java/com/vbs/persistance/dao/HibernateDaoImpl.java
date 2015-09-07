@@ -15,6 +15,7 @@ import com.vbs.custom.exceptions.VbsException;
 import com.vbs.persistance.entities.Address;
 import com.vbs.persistance.entities.OTP;
 import com.vbs.persistance.entities.User;
+import com.vbs.persistance.entities.UserCredentials;
 
 /**
  * @author DL
@@ -33,14 +34,20 @@ public class HibernateDaoImpl implements DatabaseDao {
 	 * @see com.vbs.persistance.dao.DatabaseDao#createUser(com.vbs.persistance.entities.User, com.vbs.persistance.entities.Address, com.vbs.persistance.entities.OTP)
 	 */
 	@Override
-	public boolean createUser(User user, Set<Address> addresses, OTP otp) {
+	public boolean createUser(UserCredentials cred, OTP otp) {
 		
 		System.out.println("HibernateDaoImpl.createUser()");
 		boolean result = false;
+		User user = cred.getUser();
 		Session session = sessionFactory.openSession();
 		Transaction tx = session.beginTransaction();
-		session.save(user);
-		for(Address address : addresses){
+		Set<Address> addresses = user.getAddress();
+		user.setAddress(null);
+		System.out.println(session.save(user));
+		session.save(cred);
+		System.out.println(user);
+		System.out.println("addresses:"+addresses);
+		for(Address address : addresses ){
 			address.setUser_id(user.getUserId());
 			session.save(address);
 		}
@@ -66,21 +73,21 @@ public class HibernateDaoImpl implements DatabaseDao {
 
 	@Override
 	public boolean isUserNameAvailable(String username) {
-		User user = this.getCustomerProfile(username);
-		if(user != null)
+		UserCredentials cred = this.getCustomerProfile(username);
+		if(cred != null)
 			return false;
 		else
 			return true;
 	}
 
 	@Override
-	public User getCustomerProfile(String username) {
+	public UserCredentials getCustomerProfile(String username) {
 		Session session = sessionFactory.openSession();
-		Query query = session.createQuery("from User as user where user.userName= :userName");
+		Query query = session.createQuery("from UserCredentials as cred where cred.username= :userName");
 		query.setParameter("userName", username);
-		User user = (User) query.uniqueResult();
+		UserCredentials cred = (UserCredentials) query.uniqueResult();
 		session.close();
-		return user;
+		return cred;
 	}
 
 	public User getCustomerProfile(String email, boolean isEmail) throws VbsException{
